@@ -1,26 +1,58 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Trash from "../icons/Trash";
+import { autoGrow, setNewOffset, setZIndex } from "../utils";
 
 const NoteCard = ({ note }) => {
-  let position = JSON.parse(note.position);
+  // let position = JSON.parse(note.position);
+  const [position, setPosition] = useState(JSON.parse(note.position));
+
   const colors = JSON.parse(note.colors);
   const body = JSON.parse(note.body);
 
+  let mouseStartPos = { x: 0, y: 0 };
+
+  const cardRef = useRef(null);
   const textAreaRef = useRef(null);
 
   useEffect(() => {
     autoGrow(textAreaRef);
   }, []);
 
-  function autoGrow(textAreaRef) {
-    const { current } = textAreaRef;
-    current.style.height = "auto"; // Reset the height
-    current.style.height = current.scrollHeight + "px"; // Set the new height
-  }
+  const mouseDown = (e) => {
+    mouseStartPos.x = e.clientX;
+    mouseStartPos.y = e.clientY;
+
+    document.addEventListener("mousemove", mouseMove);
+    document.addEventListener("mouseup", mouseUp);
+  };
+
+  const mouseUp = () => {
+    document.removeEventListener("mousemove", mouseMove);
+    document.removeEventListener("mouseup", mouseUp);
+  };
+
+  const mouseMove = (e) => {
+    setZIndex(cardRef.current);
+
+    //1 - Calculate move direction
+    let mouseMoveDir = {
+      x: mouseStartPos.x - e.clientX,
+      y: mouseStartPos.y - e.clientY,
+    };
+
+    //2 - Update start position for next move.
+    mouseStartPos.x = e.clientX;
+    mouseStartPos.y = e.clientY;
+
+    //3 - Update card top and left position.
+    const newPosition = setNewOffset(cardRef.current, mouseMoveDir);
+    setPosition(newPosition);
+  };
 
   return (
     <div
       className="card"
+      ref={cardRef}
       style={{
         backgroundColor: colors.colorBody,
         left: `${position.x}px`,
@@ -29,6 +61,7 @@ const NoteCard = ({ note }) => {
     >
       <div
         className="card-header"
+        onMouseDown={mouseDown}
         style={{ backgroundColor: colors.colorHeader }}
       >
         <Trash />
@@ -36,6 +69,9 @@ const NoteCard = ({ note }) => {
 
       <div className="card-body">
         <textarea
+          onFocus={() => {
+            setZIndex(cardRef.current);
+          }}
           ref={textAreaRef}
           style={{ color: colors.colorText }}
           defaultValue={body}

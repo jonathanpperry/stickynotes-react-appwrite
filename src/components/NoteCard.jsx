@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { db } from "../appwrite/databases";
 import { autoGrow, bodyParser, setNewOffset, setZIndex } from "../utils";
 import Spinner from "../icons/Spinner";
 import DeleteButton from "./DeleteButton";
+import { NoteContext } from "../context/NoteContext";
 
 const NoteCard = ({ note }) => {
   const [position, setPosition] = useState(JSON.parse(note.position));
@@ -23,15 +24,18 @@ const NoteCard = ({ note }) => {
     setZIndex(cardRef.current);
   }, []);
 
+  const { setSelectedNote } = useContext(NoteContext);
+
   const mouseDown = (e) => {
     if (e.target.className === "card-header") {
-      setZIndex(cardRef.current);
-
       mouseStartPos.x = e.clientX;
       mouseStartPos.y = e.clientY;
 
       document.addEventListener("mousemove", mouseMove);
       document.addEventListener("mouseup", mouseUp);
+
+      setZIndex(cardRef.current);
+      setSelectedNote(note);
     }
   };
 
@@ -116,6 +120,7 @@ const NoteCard = ({ note }) => {
           onKeyUp={handleKeyUp}
           onFocus={() => {
             setZIndex(cardRef.current);
+            setSelectedNote(note);
           }}
           ref={textAreaRef}
           style={{ color: colors.colorText }}
